@@ -10,10 +10,10 @@ import {
   SafeAreaView,
   Platform,
   KeyboardAvoidingView,
-  Appearance, // Added to get system theme
+  Appearance
 } from "react-native";
 import { Calendar, Agenda, LocaleConfig } from "react-native-calendars";
-import { Button, Dialog, Portal, Provider as PaperProvider } from "react-native-paper"; // Added PaperProvider for theme context
+import { Button, Dialog, Portal, Provider as PaperProvider } from "react-native-paper";
 import {
   format,
   isToday,
@@ -21,7 +21,7 @@ import {
   isBefore,
   isAfter,
   parse,
-  subDays, // Added subDays
+  subDays
 } from "date-fns";
 import {
   Calendar as CalendarIcon,
@@ -32,17 +32,13 @@ import {
   Plus,
   Trash2,
   Edit,
-  ChevronDown, // Added for dropdown indication
-} from "lucide-react-native"; // Using lucide-react-native
+  ChevronDown
+} from "lucide-react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import DateTimePicker from "@react-native-community/datetimepicker"; // Restored import
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// For UUIDs, crypto.randomUUID() is used. If issues arise on specific platforms/versions,
-// consider using a library like 'react-native-uuid'.
-// import uuid from 'react-native-uuid'; // Example: const newId = uuid.v4();
 
-// Localization
 LocaleConfig.locales["en"] = {
   monthNames: [
     "January",
@@ -92,16 +88,16 @@ const createDate = dateStrOrDate => {
       return parse(dateStrOrDate, "yyyy-MM-dd", new Date());
     } catch (error) {
       console.error("Error parsing date string:", dateStrOrDate, error);
-      return new Date(); // Fallback to current date or handle error appropriately
+      return new Date();
     }
   }
-  return dateStrOrDate; // Assume it's already a Date object
+  return dateStrOrDate;
 };
 
 const TimePicker = ({ value, onChange, isDarkMode }) => {
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [selectedTime, setSelectedTime] = useState(
-    value ? parse(value, "HH:mm", new Date()) : new Date() // Default to now if no value
+    value ? parse(value, "HH:mm", new Date()) : new Date()
   );
 
   useEffect(() => {
@@ -110,10 +106,10 @@ const TimePicker = ({ value, onChange, isDarkMode }) => {
         setSelectedTime(parse(value, "HH:mm", new Date()));
       } catch (error) {
         console.error("Error parsing time value in TimePicker:", value, error);
-        setSelectedTime(new Date()); // Fallback
+        setSelectedTime(new Date());
       }
     } else {
-      setSelectedTime(new Date()); // Reset to current time if value is cleared
+      setSelectedTime(new Date());
     }
   }, [value]);
 
@@ -142,8 +138,8 @@ const TimePicker = ({ value, onChange, isDarkMode }) => {
           is24Hour={true}
           display="default"
           onChange={handleTimeChange}
-          textColor={isDarkMode ? "#FFFFFF" : "#000000"} // iOS specific
-          style={{ backgroundColor: isDarkMode ? "#333333" : "#FFFFFF" }} // Android specific container styling
+          textColor={isDarkMode ? "#FFFFFF" : "#000000"}
+          style={{ backgroundColor: isDarkMode ? "#333333" : "#FFFFFF" }}
         />
       )}
     </>
@@ -185,7 +181,7 @@ const SubjectInput = ({ subjects, selectedSubjectId, onSelect, onAdd, isDarkMode
       return;
     }
     const newSubject = {
-      id: crypto.randomUUID(), // Or uuid.v4()
+      id: crypto.randomUUID(),
       name: newSubjectName.trim(),
       color: selectedColorForNewSubject,
     };
@@ -197,7 +193,7 @@ const SubjectInput = ({ subjects, selectedSubjectId, onSelect, onAdd, isDarkMode
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
 
-  const styles = getDynamicStyles(isDarkMode, useSafeAreaInsets()); // For dynamic styling if needed within
+  const styles = getDynamicStyles(isDarkMode, useSafeAreaInsets());
 
   return (
     <>
@@ -215,7 +211,7 @@ const SubjectInput = ({ subjects, selectedSubjectId, onSelect, onAdd, isDarkMode
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
-              setSelectedColorForNewSubject(availableColors[0]); // Reset color for new subject
+              setSelectedColorForNewSubject(availableColors[0]);
               setAddSubjectModalVisible(true);
             }}
             style={styles.smallButton}
@@ -226,7 +222,6 @@ const SubjectInput = ({ subjects, selectedSubjectId, onSelect, onAdd, isDarkMode
       </View>
 
       <Portal>
-        {/* Dialog for Adding a New Subject */}
         <Dialog
           visible={isAddSubjectModalVisible}
           onDismiss={() => setAddSubjectModalVisible(false)}
@@ -264,7 +259,6 @@ const SubjectInput = ({ subjects, selectedSubjectId, onSelect, onAdd, isDarkMode
           </Dialog.Actions>
         </Dialog>
 
-        {/* Dialog for Selecting an Existing Subject */}
         <Dialog
           visible={isSubjectListDialogVisible}
           onDismiss={() => setIsSubjectListDialogVisible(false)}
@@ -307,7 +301,6 @@ const SubjectInput = ({ subjects, selectedSubjectId, onSelect, onAdd, isDarkMode
   );
 };
 
-
 const StudyPlannerApp = () => {
   const insets = useSafeAreaInsets();
   const [systemTheme, setSystemTheme] = useState(Appearance.getColorScheme());
@@ -321,7 +314,6 @@ const StudyPlannerApp = () => {
     return () => subscription.remove();
   }, []);
 
-
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [unnegotiables, setUnnegotiables] = useState([]);
   const [studySessions, setStudySessions] = useState([]);
@@ -331,13 +323,12 @@ const StudyPlannerApp = () => {
   const [isAddSessionModalVisible, setAddSessionModalVisible] = useState(false);
   const [editingUnnegotiable, setEditingUnnegotiable] = useState(null);
   const [editingSession, setEditingSession] = useState(null);
-  const [selectedSubjectId, setSelectedSubjectId] = useState(null); // For the session modal
+  const [selectedSubjectId, setSelectedSubjectId] = useState(null);
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDeleteId, setItemToDeleteId] = useState(null);
-  const [itemToDeleteType, setItemToDeleteType] = useState(""); // 'unnegotiable' or 'session' or 'subject'
+  const [itemToDeleteType, setItemToDeleteType] = useState("");
 
-  // Load data from AsyncStorage
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -354,7 +345,6 @@ const StudyPlannerApp = () => {
     loadData();
   }, []);
 
-  // Save data to AsyncStorage
   useEffect(() => {
     const saveData = async () => {
       try {
@@ -368,13 +358,12 @@ const StudyPlannerApp = () => {
     saveData();
   }, [unnegotiables, studySessions, subjects]);
 
-
   const handleAddUnnegotiable = (formData) => {
-    if (formData && formData.id) { // Editing existing
+    if (formData && formData.id) {
       setUnnegotiables(unnegotiables.map(u => (u.id === formData.id ? formData : u)));
-    } else { // Adding new
+    } else {
       const newUnnegotiable = {
-        id: crypto.randomUUID(), // Or uuid.v4()
+        id: crypto.randomUUID(),
         name: formData?.name || "New Commitment",
         days: formData?.days || [],
         startTime: formData?.startTime || "09:00",
@@ -388,15 +377,15 @@ const StudyPlannerApp = () => {
   };
 
   const handleAddSession = (formData) => {
-    if (formData && formData.id) { // Editing existing
+    if (formData && formData.id) {
       setStudySessions(studySessions.map(s => (s.id === formData.id ? formData : s)));
-    } else { // Adding new
+    } else {
       const subjectId = formData?.subject || (subjects.length > 0 ? subjects[0].id : null);
       const subjectForSession = subjects.find(s => s.id === subjectId);
       const defaultColor = subjectForSession ? subjectForSession.color : availableColors[1];
 
       const newSession = {
-        id: crypto.randomUUID(), // Or uuid.v4()
+        id: crypto.randomUUID(),
         subject: subjectId,
         startTime: formData?.startTime || "10:00",
         endTime: formData?.endTime || "12:00",
@@ -413,7 +402,6 @@ const StudyPlannerApp = () => {
 
   const handleAddSubject = (newSubject) => {
     setSubjects(prev => [...prev, newSubject]);
-    // If adding a session and this new subject should be selected
     if (isAddSessionModalVisible && editingSession) {
       setEditingSession(prev => ({ ...prev, subject: newSubject.id, color: newSubject.color }));
       setSelectedSubjectId(newSubject.id);
@@ -432,7 +420,6 @@ const StudyPlannerApp = () => {
     } else if (itemToDeleteType === "session") {
       setStudySessions(studySessions.filter(s => s.id !== itemToDeleteId));
     } else if (itemToDeleteType === "subject") {
-      // Check if subject is in use
       const isSubjectInUse = studySessions.some(session => session.subject === itemToDeleteId);
       if (isSubjectInUse) {
         alert("Cannot delete subject. It is currently used in one or more study sessions.");
@@ -445,15 +432,12 @@ const StudyPlannerApp = () => {
     setItemToDeleteType("");
   };
 
-
   const onDayPress = day => {
     setSelectedDate(day.dateString);
   };
 
   const renderDay = (day, item) => {
-    // 'day' from renderDay prop is a date object like {dateString, day, month, year, timestamp}
-    // 'item' is undefined here, this function is for calendar cells
-    const dayDate = createDate(day.dateString); // Ensure we have a Date object
+    const dayDate = createDate(day.dateString);
     const styles = getDynamicStyles(isDarkMode, insets);
 
     return (
@@ -473,17 +457,16 @@ const StudyPlannerApp = () => {
         >
           {day.day}
         </Text>
-        {/* Add dots for events */}
       </TouchableOpacity>
     );
   };
 
   const agendaItems = studySessions.reduce((acc, session) => {
-    const date = session.date; // Already "yyyy-MM-dd"
+    const date = session.date;
     if (!acc[date]) {
       acc[date] = [];
     }
-    acc[date].push({ ...session, height: 80 }); // Add height for agenda items
+    acc[date].push({ ...session, height: 80 });
     return acc;
   }, {});
 
@@ -513,7 +496,6 @@ const StudyPlannerApp = () => {
       </TouchableOpacity>
     );
   };
-
 
   const renderEmptyAgenda = () => {
     const styles = getDynamicStyles(isDarkMode, insets);
@@ -547,7 +529,6 @@ const StudyPlannerApp = () => {
     );
   };
 
-  // Dynamic styles for theme
   const styles = getDynamicStyles(isDarkMode, insets);
   const calendarTheme = {
     backgroundColor: isDarkMode ? "#121212" : "#ffffff",
@@ -555,7 +536,7 @@ const StudyPlannerApp = () => {
     textSectionTitleColor: isDarkMode ? "#b6c1cd" : "#2d4150",
     selectedDayBackgroundColor: "#00adf5",
     selectedDayTextColor: "#ffffff",
-    todayTextColor: isDarkMode ? "#00AAFF" : "#007AFF", // Brighter blue for today
+    todayTextColor: isDarkMode ? "#00AAFF" : "#007AFF",
     dayTextColor: isDarkMode ? "#D1D1D1" : "#2d4150",
     textDisabledColor: isDarkMode ? "#555555" : "#d9e1e8",
     dotColor: "#00adf5",
@@ -581,7 +562,7 @@ const StudyPlannerApp = () => {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined} // "height" can sometimes cause issues
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={{ flex: 1 }}
             keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
           >
@@ -593,170 +574,149 @@ const StudyPlannerApp = () => {
                 </TouchableOpacity>
               </View>
 
-            <ScrollView
+              <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 100 }} // Ensure space for last items if Agenda is tall
-            >
+                contentContainerStyle={{ paddingBottom: 100 }}
+              >
                 <Calendar
-                    current={selectedDate}
-                    onDayPress={onDayPress}
-                    monthFormat={"MMMM yyyy"}
-                    theme={calendarTheme}
-                    renderDay={renderDay} // Using custom renderDay
-                    style={styles.calendar}
-                    markedDates={{
-                        [selectedDate]: { selected: true, selectedColor: calendarTheme.selectedDayBackgroundColor },
-                        // Mark days with sessions
-                        ...Object.keys(agendaItems).reduce((acc, date) => {
-                            acc[date] = { ...acc[date], marked: true, dotColor: calendarTheme.dotColor };
-                            return acc;
-                        }, {}),
-                    }}
+                  current={selectedDate}
+                  onDayPress={onDayPress}
+                  monthFormat={"MMMM yyyy"}
+                  theme={calendarTheme}
+                  renderDay={renderDay}
+                  style={styles.calendar}
+                  markedDates={{
+                    [selectedDate]: { selected: true, selectedColor: calendarTheme.selectedDayBackgroundColor },
+                    ...Object.keys(agendaItems).reduce((acc, date) => {
+                      acc[date] = { ...acc[date], marked: true, dotColor: calendarTheme.dotColor };
+                      return acc;
+                    }, {}),
+                  }}
                 />
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Unnegotiable Commitments</Text>
-                    {unnegotiables.length === 0 ? (
-                        <Text style={styles.emptyStateText}>No fixed commitments added yet.</Text>
-                    ) : (
+                  <Text style={styles.sectionTitle}>Unnegotiable Commitments</Text>
+                  {unnegotiables.length === 0 ? (
+                    <Text style={styles.emptyStateText}>No fixed commitments added yet.</Text>
+                  ) : (
                     <FlatList
-                        data={unnegotiables}
-                        keyExtractor={item => item.id}
-                        renderItem={({ item }) => (
+                      data={unnegotiables}
+                      keyExtractor={item => item.id}
+                      renderItem={({ item }) => (
                         <View style={[styles.listItem, { borderLeftColor: item.color || availableColors[0] }]}>
-                            <View style={{ flex: 1 }}>
+                          <View style={{ flex: 1 }}>
                             <Text style={styles.listItemText}>{item.name}</Text>
                             <Text style={styles.listItemSubText}>
-                                {item.days.join(", ")} | {item.startTime} - {item.endTime}
+                              {item.days.join(", ")} | {item.startTime} - {item.endTime}
                             </Text>
-                            </View>
-                            <TouchableOpacity onPress={() => { setEditingUnnegotiable(item); setAddUnnegotiableModalVisible(true); }} style={styles.editIcon}>
-                                <Edit size={18} color={isDarkMode ? "#A0A0A0" : "#555555"} />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => openDeleteDialog(item.id, "unnegotiable")} style={styles.deleteIcon}>
-                                <Trash2 size={18} color={isDarkMode ? "#FF7F7F" : "#D32F2F"} />
-                            </TouchableOpacity>
+                          </View>
+                          <TouchableOpacity onPress={() => { setEditingUnnegotiable(item); setAddUnnegotiableModalVisible(true); }} style={styles.editIcon}>
+                            <Edit size={18} color={isDarkMode ? "#A0A0A0" : "#555555"} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => openDeleteDialog(item.id, "unnegotiable")} style={styles.deleteIcon}>
+                            <Trash2 size={18} color={isDarkMode ? "#FF7F7F" : "#D32F2F"} />
+                          </TouchableOpacity>
                         </View>
-                        )}
-                        // scrollEnabled={false} // If ScrollView parent should handle scrolling
+                      )}
                     />
-                    )}
-                    <Button
-                        mode="outlined"
-                        icon={() => <Plus size={18} color={isDarkMode ? "#BB86FC" : "#6200ee"} />}
-                        onPress={() => {
-                            setEditingUnnegotiable({ // Initialize for new entry
-                                name: "",
-                                days: [],
-                                startTime: "09:00",
-                                endTime: "17:00",
-                                color: availableColors[0],
-                            });
-                            setAddUnnegotiableModalVisible(true);
-                        }}
-                        style={styles.addButton}
-                        labelStyle={{ color: isDarkMode ? "#BB86FC" : "#6200ee" }}
-                        theme={{ colors: { primary: isDarkMode ? "#BB86FC" : "#6200ee", outline: isDarkMode ? "#555" : "#ccc" } }}
-                    >
-                        Add Commitment
-                    </Button>
+                  )}
+                  <Button
+                    mode="outlined"
+                    icon={() => <Plus size={18} color={isDarkMode ? "#BB86FC" : "#6200ee"} />}
+                    onPress={() => {
+                      setEditingUnnegotiable({
+                        name: "",
+                        days: [],
+                        startTime: "09:00",
+                        endTime: "17:00",
+                        color: availableColors[0],
+                      });
+                      setAddUnnegotiableModalVisible(true);
+                    }}
+                    style={styles.addButton}
+                    labelStyle={{ color: isDarkMode ? "#BB86FC" : "#6200ee" }}
+                    theme={{ colors: { primary: isDarkMode ? "#BB86FC" : "#6200ee", outline: isDarkMode ? "#555" : "#ccc" } }}
+                  >
+                    Add Commitment
+                  </Button>
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Subjects</Text>
-                    {subjects.length === 0 ? (
-                         <Text style={styles.emptyStateText}>No subjects added yet.</Text>
-                    ) : (
+                  <Text style={styles.sectionTitle}>Subjects</Text>
+                  {subjects.length === 0 ? (
+                    <Text style={styles.emptyStateText}>No subjects added yet.</Text>
+                  ) : (
                     <FlatList
-                        data={subjects}
-                        keyExtractor={item => item.id}
-                        renderItem={({ item }) => (
-                            <View style={[styles.listItem, { borderLeftColor: item.color || availableColors[0] }]}>
-                                <View style={[styles.subjectColorDot, { backgroundColor: item.color, marginRight: 10 }]} />
-                                <Text style={[styles.listItemText, {flex:1}]}>{item.name}</Text>
-                                <TouchableOpacity onPress={() => openDeleteDialog(item.id, "subject")} style={styles.deleteIcon}>
-                                    <Trash2 size={18} color={isDarkMode ? "#FF7F7F" : "#D32F2F"} />
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                        // scrollEnabled={false}
+                      data={subjects}
+                      keyExtractor={item => item.id}
+                      renderItem={({ item }) => (
+                        <View style={[styles.listItem, { borderLeftColor: item.color || availableColors[0] }]}>
+                          <View style={[styles.subjectColorDot, { backgroundColor: item.color, marginRight: 10 }]} />
+                          <Text style={[styles.listItemText, {flex:1}]}>{item.name}</Text>
+                          <TouchableOpacity onPress={() => openDeleteDialog(item.id, "subject")} style={styles.deleteIcon}>
+                            <Trash2 size={18} color={isDarkMode ? "#FF7F7F" : "#D32F2F"} />
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     />
-                    )}
-                    <Button
-                        mode="outlined"
-                        icon={() => <Plus size={18} color={isDarkMode ? "#BB86FC" : "#6200ee"} />}
-                        onPress={() => { // Trigger SubjectInput's add new mechanism indirectly
-                            // This might need SubjectInput to expose a method or handle this via a prop
-                            // For now, we rely on the SubjectInput in the Session Modal.
-                            // Or, provide a standalone "Add Subject" here.
-                            // Let's use the SubjectInput modal directly for adding for now.
-                            // This requires a modal just for subject adding or integrate SubjectInput here.
-                            // For simplicity, if adding here, we'd need a separate mini-form for subject.
-                            // The existing SubjectInput component is designed to be part of other forms.
-                            // A simpler approach for this button:
-                            alert("Add subjects via the 'Add Study Session' form or edit an existing session.");
-                            // Or, implement a simpler add subject modal here if desired.
-                        }}
-                        style={styles.addButton}
-                        labelStyle={{ color: isDarkMode ? "#BB86FC" : "#6200ee" }}
-                        theme={{ colors: { primary: isDarkMode ? "#BB86FC" : "#6200ee", outline: isDarkMode ? "#555" : "#ccc" } }}
-                    >
-                        Add Subject
-                    </Button>
+                  )}
+                  <Button
+                    mode="outlined"
+                    icon={() => <Plus size={18} color={isDarkMode ? "#BB86FC" : "#6200ee"} />}
+                    onPress={() => {
+                      alert("Add subjects via the 'Add Study Session' form or edit an existing session.");
+                    }}
+                    style={styles.addButton}
+                    labelStyle={{ color: isDarkMode ? "#BB86FC" : "#6200ee" }}
+                    theme={{ colors: { primary: isDarkMode ? "#BB86FC" : "#6200ee", outline: isDarkMode ? "#555" : "#ccc" } }}
+                  >
+                    Add Subject
+                  </Button>
                 </View>
 
-
-                {/* Study Sessions are primarily handled by Agenda */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Daily Study Plan</Text>
+                  <Text style={styles.sectionTitle}>Daily Study Plan</Text>
                 </View>
-            </ScrollView>
+              </ScrollView>
             </View>
 
             <Agenda
-                items={agendaItems}
-                selected={selectedDate}
-                onDayPress={onDayPress} // Allow changing day from Agenda header
-                renderItem={renderAgendaItem}
-                renderEmptyData={renderEmptyAgenda}
-                showClosingKnob={true}
-                theme={calendarTheme}
-                style={{ height: Platform.OS === 'android' ? 400 : 350 }} // Give Agenda a fixed height or flex grow.
-                // futureScrollRange={12}
-                // pastScrollRange={3}
+              items={agendaItems}
+              selected={selectedDate}
+              onDayPress={onDayPress}
+              renderItem={renderAgendaItem}
+              renderEmptyData={renderEmptyAgenda}
+              showClosingKnob={true}
+              theme={calendarTheme}
+              style={{ height: Platform.OS === 'android' ? 400 : 350 }}
             />
 
+            <Button
+              mode="contained"
+              icon={() => <Plus size={20} color={isDarkMode ? "#000" : "#fff"} />}
+              onPress={() => {
+                const defaultSubjectId = subjects.length > 0 ? subjects[0].id : null;
+                const defaultColor = subjects.length > 0 ? (subjects.find(s=>s.id === defaultSubjectId)?.color || availableColors[1]) : availableColors[1];
 
-            {/* Add Study Session Floating Action Button or Button */}
-             <Button
-                mode="contained"
-                icon={() => <Plus size={20} color={isDarkMode ? "#000" : "#fff"} />}
-                onPress={() => {
-                    const defaultSubjectId = subjects.length > 0 ? subjects[0].id : null;
-                    const defaultColor = subjects.length > 0 ? (subjects.find(s=>s.id === defaultSubjectId)?.color || availableColors[1]) : availableColors[1];
-
-                    setEditingSession({ // Initialize for new session
-                        subject: defaultSubjectId,
-                        startTime: "10:00",
-                        endTime: "12:00",
-                        date: selectedDate, // Use current calendar date
-                        notes: "",
-                        color: defaultColor,
-                    });
-                    setSelectedSubjectId(defaultSubjectId);
-                    setAddSessionModalVisible(true);
-                }}
-                style={styles.fab}
-                labelStyle={{ color: isDarkMode ? "#000" : "#fff" }}
-                theme={{ colors: { primary: isDarkMode ? "#BB86FC" : "#6200ee" } }}
+                setEditingSession({
+                  subject: defaultSubjectId,
+                  startTime: "10:00",
+                  endTime: "12:00",
+                  date: selectedDate,
+                  notes: "",
+                  color: defaultColor,
+                });
+                setSelectedSubjectId(defaultSubjectId);
+                setAddSessionModalVisible(true);
+              }}
+              style={styles.fab}
+              labelStyle={{ color: isDarkMode ? "#000" : "#fff" }}
+              theme={{ colors: { primary: isDarkMode ? "#BB86FC" : "#6200ee" } }}
             >
-                New Study Session
+              New Study Session
             </Button>
 
-
-            {/* Modals */}
             <Portal>
-              {/* Add/Edit Unnegotiable Modal */}
               <Dialog
                 visible={isAddUnnegotiableModalVisible}
                 onDismiss={() => { setAddUnnegotiableModalVisible(false); setEditingUnnegotiable(null); }}
@@ -783,20 +743,20 @@ const StudyPlannerApp = () => {
                   />
                   <View style={styles.timeRow}>
                     <View style={styles.timeInputGroup}>
-                        <Text style={styles.label}>Start Time</Text>
-                        <TimePicker
-                            value={editingUnnegotiable?.startTime}
-                            onChange={time => setEditingUnnegotiable(prev => ({ ...prev, startTime: time }))}
-                            isDarkMode={isDarkMode}
-                        />
+                      <Text style={styles.label}>Start Time</Text>
+                      <TimePicker
+                        value={editingUnnegotiable?.startTime}
+                        onChange={time => setEditingUnnegotiable(prev => ({ ...prev, startTime: time }))}
+                        isDarkMode={isDarkMode}
+                      />
                     </View>
                     <View style={styles.timeInputGroup}>
-                        <Text style={styles.label}>End Time</Text>
-                        <TimePicker
-                            value={editingUnnegotiable?.endTime}
-                            onChange={time => setEditingUnnegotiable(prev => ({ ...prev, endTime: time }))}
-                            isDarkMode={isDarkMode}
-                        />
+                      <Text style={styles.label}>End Time</Text>
+                      <TimePicker
+                        value={editingUnnegotiable?.endTime}
+                        onChange={time => setEditingUnnegotiable(prev => ({ ...prev, endTime: time }))}
+                        isDarkMode={isDarkMode}
+                      />
                     </View>
                   </View>
                   <Text style={styles.label}>Color</Text>
@@ -822,7 +782,6 @@ const StudyPlannerApp = () => {
                 </Dialog.Actions>
               </Dialog>
 
-              {/* Add/Edit Study Session Modal */}
               <Dialog
                 visible={isAddSessionModalVisible}
                 onDismiss={() => { setAddSessionModalVisible(false); setEditingSession(null); setSelectedSubjectId(null); }}
@@ -845,30 +804,30 @@ const StudyPlannerApp = () => {
                   />
                   <View style={styles.timeRow}>
                     <View style={styles.timeInputGroup}>
-                        <Text style={styles.label}>Start Time</Text>
-                        <TimePicker
-                            value={editingSession?.startTime}
-                            onChange={time => setEditingSession(prev => ({ ...prev, startTime: time }))}
-                            isDarkMode={isDarkMode}
-                        />
+                      <Text style={styles.label}>Start Time</Text>
+                      <TimePicker
+                        value={editingSession?.startTime}
+                        onChange={time => setEditingSession(prev => ({ ...prev, startTime: time }))}
+                        isDarkMode={isDarkMode}
+                      />
                     </View>
                     <View style={styles.timeInputGroup}>
-                        <Text style={styles.label}>End Time</Text>
-                        <TimePicker
-                            value={editingSession?.endTime}
-                            onChange={time => setEditingSession(prev => ({ ...prev, endTime: time }))}
-                            isDarkMode={isDarkMode}
-                        />
+                      <Text style={styles.label}>End Time</Text>
+                      <TimePicker
+                        value={editingSession?.endTime}
+                        onChange={time => setEditingSession(prev => ({ ...prev, endTime: time }))}
+                        isDarkMode={isDarkMode}
+                      />
                     </View>
                   </View>
                   <Text style={styles.label}>Date</Text>
-                    <TouchableOpacity onPress={() => {/* Logic to show a date picker for session date if needed */}}>
-                         <TextInput
-                            value={editingSession?.date || selectedDate}
-                            editable={false} // Date is usually picked from calendar or a picker
-                            style={[styles.textInput, { opacity: 0.7 }]}
-                        />
-                    </TouchableOpacity>
+                  <TouchableOpacity onPress={() => {}}>
+                    <TextInput
+                      value={editingSession?.date || selectedDate}
+                      editable={false}
+                      style={[styles.textInput, { opacity: 0.7 }]}
+                    />
+                  </TouchableOpacity>
 
                   <Text style={styles.label}>Notes</Text>
                   <TextInput
@@ -902,7 +861,6 @@ const StudyPlannerApp = () => {
                 </Dialog.Actions>
               </Dialog>
 
-              {/* Delete Confirmation Dialog */}
               <Dialog
                 visible={showDeleteDialog}
                 onDismiss={() => setShowDeleteDialog(false)}
@@ -923,7 +881,7 @@ const StudyPlannerApp = () => {
                   </Button>
                   <Button
                     onPress={handleDeleteItem}
-                    textColor={isDarkMode ? "#FF7F7F" : "#D32F2F"} // Destructive action color
+                    textColor={isDarkMode ? "#FF7F7F" : "#D32F2F"}
                   >
                     Delete
                   </Button>
@@ -937,8 +895,6 @@ const StudyPlannerApp = () => {
   );
 };
 
-
-// Moved StyleSheet outside and made it a function for dynamic styles
 const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -947,7 +903,7 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 15,
-    backgroundColor: isDarkMode ? "#121212" : "#FFFFFF", // Main content area background
+    backgroundColor: isDarkMode ? "#121212" : "#FFFFFF",
   },
   header: {
     flexDirection: "row",
@@ -970,19 +926,18 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
     borderRadius: 8,
   },
   calendarDay: {
-    width: 32, // Adjust as needed
-    height: 32, // Adjust as needed
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16, // Make it circular
+    borderRadius: 16,
   },
   calendarDayText: {
     fontSize: 14,
     color: isDarkMode ? "#D1D1D1" : "#2d4150",
   },
   todayCell: {
-    backgroundColor: isDarkMode ? 'rgba(0, 170, 255, 0.15)' : 'rgba(0, 122, 255, 0.1)', // Light background for today
-    // borderRadius: 16, // Circular today indicator
+    backgroundColor: isDarkMode ? 'rgba(0, 170, 255, 0.15)' : 'rgba(0, 122, 255, 0.1)',
   },
   todayText: {
     fontWeight: 'bold',
@@ -1050,7 +1005,7 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
     position: "absolute",
     margin: 16,
     right: 0,
-    bottom: (insets.bottom || 0) + 10, // Adjust based on safe area
+    bottom: (insets.bottom || 0) + 10,
     borderRadius: 28,
     elevation: 4,
   },
@@ -1088,9 +1043,9 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
   },
   timeInputGroup: {
     flex: 1,
-    marginRight: 5, // Adjust as needed
+    marginRight: 5,
   },
-  timeInputGroupLast: { // If you had a third item or specific last item styling
+  timeInputGroupLast: {
     marginRight: 0,
   },
   timePickerButton: {
@@ -1099,7 +1054,6 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
     backgroundColor: isDarkMode ? "#2C2C2C" : "#F0F0F0",
     borderRadius: 6,
     borderWidth: 1,
-    // borderColor: isDarkMode ? "#444" : "#DDD", // Set in component
     alignItems: "center",
   },
   colorPickerContainer: {
@@ -1117,7 +1071,6 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
     borderColor: "transparent",
   },
   selectedColorOption: {
-    // borderColor: isDarkMode ? "#fff" : "#000", // Set in component
     transform: [{ scale: 1.15 }],
   },
   emptyStateText: {
@@ -1131,7 +1084,6 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
     color: isDarkMode ? "#D1D1D1" : "#333",
     lineHeight: 22,
   },
-  // SubjectInput specific styles
   subjectPickerButton: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1141,7 +1093,6 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
     backgroundColor: isDarkMode ? "#2C2C2C" : "#F0F0F0",
     borderRadius: 6,
     borderWidth: 1,
-    // borderColor: isDarkMode ? "#444" : "#DDD", // Set in component
   },
   subjectPickerText: {
     fontSize: 16,
@@ -1159,7 +1110,6 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    // borderBottomColor: isDarkMode ? "#333" : "#eee", // Set in component
   },
   subjectListItemText: {
     fontSize: 16,
@@ -1171,7 +1121,6 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
     height: 12,
     borderRadius: 6,
   },
-  // Agenda styles
   agendaItem: {
     backgroundColor: isDarkMode ? "#2C2C2C" : "#F9F9F9",
     borderRadius: 5,
@@ -1182,7 +1131,7 @@ const getDynamicStyles = (isDarkMode, insets) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 70, // Ensure a minimum height
+    minHeight: 70,
   },
   agendaItemTime: {
     fontSize: 13,

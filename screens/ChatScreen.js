@@ -21,27 +21,22 @@ import { shareAsync } from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { marked } from 'marked'; // Import marked library
+import { marked } from 'marked';
 
-
-// IMPORTANT: Replace with your actual API key
-// For production apps, manage API keys securely (e.g., environment variables)
-const API_KEY = "AIzaSyDUZOcnJQnv1f1f1FbHSiXmlwXBKfaeAaY"; // Replace with your actual API key
-
+const API_KEY = "AIzaSyDUZOcnJQnv1f1f1FbHSiXmlwXBKfaeAaY";
 const API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 const auth = getAuth(app);
 
-const HEADER_HEIGHT_ESTIMATE = 15 * 2 + 24 + 10; // Estimated header height if you add one
+const HEADER_HEIGHT_ESTIMATE = 15 * 2 + 24 + 10;
 
 const ChatScreen = () => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
-    const [loading, setLoading] = useState(false); // For AI response generation
-    const [pdfLoading, setPdfLoading] = useState(false); // For PDF generation/saving
+    const [loading, setLoading] = useState(false);
+    const [pdfLoading, setPdfLoading] = useState(false);
     const [user, setUser] = useState(auth.currentUser);
     const insets = useSafeAreaInsets();
 
-    // Listen for authentication state changes
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((currentUser) => {
             setUser(currentUser);
@@ -49,14 +44,12 @@ const ChatScreen = () => {
         return unsubscribe;
     }, []);
 
-    // Generates a UUID for message IDs
     const generateUUID = () => {
         return Platform.OS === "web"
             ? crypto.randomUUID()
             : Crypto.randomUUID();
     };
 
-    // Sends a message to the AI model
     const sendMessage = useCallback(async () => {
         if (!input.trim() || loading || pdfLoading) return;
 
@@ -64,19 +57,19 @@ const ChatScreen = () => {
             id: generateUUID(),
             text: input,
             sender: "user",
-            timestamp: new Date().toISOString(), // Add timestamp
+            timestamp: new Date().toISOString(),
         };
 
         setMessages((prev) => [...prev, userMessage]);
-        const currentInput = input; // Capture input before clearing
+        const currentInput = input;
         setInput("");
-        setLoading(true); // Start loading for AI response
+        setLoading(true);
 
         const requestBody = {
             contents: [
                 {
                     role: "user",
-                    parts: [{ text: currentInput }], // Use captured input
+                    parts: [{ text: currentInput }],
                 },
             ],
         };
@@ -114,7 +107,7 @@ const ChatScreen = () => {
                     id: generateUUID(),
                     text: aiText,
                     sender: "ai",
-                    timestamp: new Date().toISOString(), // Add timestamp
+                    timestamp: new Date().toISOString(),
                 };
 
                 setMessages((prev) => [...prev, botMessage]);
@@ -132,7 +125,7 @@ const ChatScreen = () => {
                     },
                 ]);
             } finally {
-                setLoading(false); // End loading for AI response
+                setLoading(false);
             }
         };
 
@@ -140,14 +133,9 @@ const ChatScreen = () => {
 
     }, [input, loading, pdfLoading]);
 
-    // --- PDF Generation Logic (Updated with Reversed B&W aesthetic in HTML) ---
-
-    // Creates HTML content for a single message
     const createHtmlContentForMessage = (message) => {
-        // Use marked to convert Markdown text to HTML.
         const htmlFromMarkdown = marked.parse(message.text);
 
-        // Apply Reversed B&W styling to the HTML
         return `
         <!DOCTYPE html>
         <html>
@@ -161,7 +149,6 @@ const ChatScreen = () => {
                 .response-section { margin-bottom: 20px; }
                 .response-label { color: #555; font-size: 0.9em; margin-bottom: 8px; display: block; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
                 .response-text { font-size: 1.1em; color: #000; padding: 15px; background-color: #F8F8F8; border-radius: 6px; border-left: 4px solid #000; white-space: pre-wrap; word-wrap: break-word; }
-                /* Styling for tables generated from Markdown */
                 table {
                   width: 100%;
                   border-collapse: collapse;
@@ -174,14 +161,13 @@ const ChatScreen = () => {
                   text-align: left;
                 }
                 th {
-                  background-color: #e0e0e0; /* Light gray header */
+                  background-color: #e0e0e0;
                   font-weight: bold;
                   color: #000;
                 }
                 tr:nth-child(even) {
-                  background-color: #f2f2f2; /* Very light gray stripe */
+                  background-color: #f2f2f2;
                 }
-                /* Styling for code blocks within Markdown */
                 pre {
                   background-color: #EFEFEF;
                   padding: 10px;
@@ -223,7 +209,6 @@ const ChatScreen = () => {
         `;
     };
 
-    // Generates a PDF for a given AI message
     const generatePdfForMessage = async (messageToExport) => {
         console.log("Attempting to generate PDF for message:", messageToExport.id);
         if (!messageToExport || messageToExport.sender !== 'ai') {
@@ -244,8 +229,8 @@ const ChatScreen = () => {
             console.log("Attempting to print to file...");
             const { uri } = await Print.printToFileAsync({
                 html: htmlContent,
-                width: 612, // Standard PDF width (8.5 inches at 72 dpi)
-                height: 792, // Standard PDF height (11 inches at 72 dpi)
+                width: 612,
+                height: 792,
             });
             console.log("Print.printToFileAsync successful. URI:", uri);
 
@@ -269,14 +254,13 @@ const ChatScreen = () => {
         }
     };
 
-    // Saves the generated PDF file locally
     const savePdfLocal = async (uri, messageId) => {
         setPdfLoading(true);
         try {
             const now = new Date();
             const formattedDate = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
             const formattedTime = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
-            const simpleId = messageId.substring(0, 8); // Use a portion of the ID for a simpler file name
+            const simpleId = messageId.substring(0, 8);
             const fileName = `GeminiResponse_${simpleId}_${formattedDate}_${formattedTime}.pdf`;
             const destPath = `${FileSystem.documentDirectory}${fileName}`;
 
@@ -295,9 +279,7 @@ const ChatScreen = () => {
             await FileSystem.copyAsync({ from: uri, to: destPath });
             console.log("FileSystem.copyAsync successful.");
 
-            // Provide guidance on where the file is saved, as documentDirectory is app-specific
             const locationMessage = `Your PDF is saved to your app's private document directory.\n\nFile Name: ${fileName}\nFull Path: ${destPath}\n\nOn iOS, you can usually find this in the "Files" app under "On My iPhone/iPad" > "YourAppFolder".\nOn Android, this is typically in "Internal Storage/Android/data/com.yourbundleid/files/Documents" but is generally best accessed via sharing.\n\nTo save to your device's public "Downloads" folder or share with other apps, please use the "Share" option.`;
-
 
             Alert.alert("Success", locationMessage);
 
@@ -309,13 +291,10 @@ const ChatScreen = () => {
         }
     };
 
-    // Shares the generated PDF file
     const sharePdfFile = async (uri) => {
         setPdfLoading(true);
         try {
             console.log("Attempting to share PDF. URI:", uri);
-            // UTI (Uniform Type Identifier) for PDF is 'com.adobe.pdf' on iOS, but '.pdf' works broadly
-            // mimeType is standard
             await shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
             console.log("shareAsync successful.");
         } catch (error) {
@@ -330,40 +309,25 @@ const ChatScreen = () => {
         }
     };
 
-    // Renders individual chat messages in the FlatList
     const renderMessage = ({ item }) => {
         const isUser = item.sender === "user";
         return (
-            // Potential source of the "Text strings must be rendered within a <Text> component" error
-            // Ensure no direct text nodes exist outside of <Text> components here.
             <View style={[styles.messageRowWrapper, isUser ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }]}>
-                <View
-                    style={[
-                        styles.messageContainer,
-                        isUser ? styles.userMessage : styles.aiMessage,
-                    ]}
-                >
-                    <Text style={[
-                        styles.messageTextBase,
-                        isUser ? styles.userMessageText : styles.aiMessageText
-                    ]}>
+                <View style={[styles.messageContainer, isUser ? styles.userMessage : styles.aiMessage]}>
+                    <Text style={[styles.messageTextBase, isUser ? styles.userMessageText : styles.aiMessageText]}>
                         {item.text}
-                    </Text>
-
-                    {/* Ensure PDF icon is only for AI messages and there is text */}
-                    {!isUser && item.text && (
+                    </Text>{!isUser && item.text && (
                         <TouchableOpacity
                             style={styles.pdfIconBubble}
                             onPress={() => {
                                 console.log("PDF download icon pressed for message:", item.id);
                                 generatePdfForMessage(item);
                             }}
-                            disabled={pdfLoading} // Disable icon if PDF generation is in progress
+                            disabled={pdfLoading}
                         >
                             <Ionicons
                                 name="download-outline"
                                 size={20}
-                                // Icon color: Black on AI bubble, dark gray when loading
                                 color={pdfLoading ? '#888' : '#000'}
                             />
                         </TouchableOpacity>
@@ -379,57 +343,50 @@ const ChatScreen = () => {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + HEADER_HEIGHT_ESTIMATE : 0}
         >
-            {/* White and Black Gradient (Reversed) */}
             <LinearGradient colors={['#FFFFFF', '#CCCCCC']} style={styles.gradientBackground}>
                 <View style={[styles.contentContainer, { paddingTop: insets.top }]}>
                     <FlatList
-                        data={[...messages].reverse()} // Display latest messages at the bottom
+                        data={[...messages].reverse()}
                         renderItem={renderMessage}
                         keyExtractor={(item) => item.id}
-                        inverted // Render list upside down to show new messages at the bottom
+                        inverted
                         contentContainerStyle={styles.flatListContent}
                         style={styles.flatList}
                         showsVerticalScrollIndicator={false}
                     />
 
-                    {/* Light Input Container */}
                     <View style={[styles.inputContainer, { paddingBottom: insets.bottom || 10 }]}>
-                        {/* Dark Input Field */}
                         <TextInput
                             style={styles.input}
                             placeholder="Type your message here..."
-                            placeholderTextColor="#444444" // Dark gray placeholder
+                            placeholderTextColor="#444444"
                             value={input}
                             onChangeText={setInput}
-                            // onSubmitEditing={sendMessage} // Using send button instead for multiline support
                             returnKeyType="send"
                             editable={!loading && !pdfLoading}
                             multiline
                         />
-                        {/* White Send Button */}
                         <TouchableOpacity
                             style={[styles.sendButton, (loading || !input.trim() || pdfLoading) && styles.sendButtonDisabled]}
                             onPress={sendMessage}
                             disabled={loading || !input.trim() || pdfLoading}
                         >
                             {loading ? (
-                                <ActivityIndicator size="small" color="#000000" /> // Black loading indicator
+                                <ActivityIndicator size="small" color="#000000" />
                             ) : (
-                                <Ionicons name="send" size={24} color="#000000" /> // Black send icon
+                                <Ionicons name="send" size={24} color="#000000" />
                             )}
                         </TouchableOpacity>
                     </View>
                 </View>
             </LinearGradient>
 
-            {/* PDF Loading Overlay (Light) */}
             {pdfLoading && (
                 <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color="#000000" /> {/* Black loading indicator */}
+                    <ActivityIndicator size="large" color="#000000" />
                     <Text style={styles.loadingText}>Generating and saving PDF...</Text>
                 </View>
             )}
-
         </KeyboardAvoidingView>
     );
 };
@@ -437,7 +394,7 @@ const ChatScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFF', // Fallback background
+        backgroundColor: '#FFF',
     },
     gradientBackground: {
         flex: 1,
@@ -456,7 +413,6 @@ const styles = StyleSheet.create({
     messageRowWrapper: {
         marginVertical: 4,
         width: '100%',
-        // alignItems is set inline based on sender
     },
     messageContainer: {
         paddingVertical: 12,
@@ -464,77 +420,76 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         maxWidth: "85%",
         elevation: 2,
-        shadowColor: '#000', // Shadows are still dark
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
         shadowRadius: 2,
     },
     userMessage: {
-        backgroundColor: "#000000", // Black background for user bubble
+        backgroundColor: "#000000",
         alignSelf: "flex-end",
         borderBottomRightRadius: 4,
         marginRight: 5,
     },
     aiMessage: {
-        backgroundColor: "#FFFFFF", // White background for AI bubble (stays white)
+        backgroundColor: "#FFFFFF",
         alignSelf: "flex-start",
         borderBottomLeftRadius: 4,
         marginLeft: 5,
-        flexDirection: 'column', // Use column to stack text and icon
+        flexDirection: 'column',
     },
     messageTextBase: {
         fontSize: 16,
         lineHeight: 22,
     },
     userMessageText: {
-        color: "#FFFFFF", // White text on black bubble (stays white)
+        color: "#FFFFFF",
     },
     aiMessageText: {
-        color: "#000000", // Black text on white bubble (stays black)
+        color: "#000000",
     },
     pdfIconBubble: {
-        alignSelf: 'flex-end', // Align icon to the right within the AI bubble
-        marginTop: 8, // Space between text and icon
+        alignSelf: 'flex-end',
+        marginTop: 8,
         padding: 4,
-        // Add padding around the icon for easier tapping
         paddingHorizontal: 8,
         paddingVertical: 6,
     },
     inputContainer: {
         flexDirection: "row",
-        backgroundColor: "#FFFFFF", // White background for input area
+        backgroundColor: "#FFFFFF",
         paddingHorizontal: 15,
         paddingTop: 12,
         borderTopLeftRadius: 0,
         borderTopRightRadius: 0,
         borderTopWidth: 1,
-        borderColor: '#CCCCCC', // Light gray border top
+        borderColor: '#CCCCCC',
         elevation: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -5 },
-        shadowOpacity: 0.1, // Softer shadow
+        shadowOpacity: 0.1,
         shadowRadius: 8,
-        alignItems: 'flex-end', // Align items to the bottom
+        alignItems: 'flex-end',
     },
     input: {
         flex: 1,
-        maxHeight: 100, // Limit input height
+        maxHeight: 100,
         borderWidth: 1,
-        borderColor: '#CCCCCC', // Light gray border
+        borderColor: '#CCCCCC',
         borderRadius: 20,
         paddingHorizontal: 18,
-        paddingVertical: Platform.OS === 'ios' ? 12 : 10, // Adjust padding for platforms
+        paddingVertical: Platform.OS === 'ios' ? 12 : 10,
         marginRight: 10,
-        backgroundColor: '#E0E0E0', // Light gray input field
+        backgroundColor: '#E0E0E0',
         fontSize: 16,
-        color: '#000000', // Black text
+        color: '#000000',
         lineHeight: 20,
-        borderCurve: 'circular', // Nicer rounded corners on supported platforms
+        borderCurve: 'circular',
     },
     sendButton: {
         width: 48,
         height: 48,
-        backgroundColor: "#eaeaea", // Light gray background for the button itself
+        backgroundColor: "#eaeaea",
         borderRadius: 24,
         justifyContent: "center",
         alignItems: "center",
@@ -543,27 +498,26 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.4,
         shadowRadius: 5,
-        marginBottom: Platform.OS === 'ios' ? 0 : 2, // Adjust alignment for platforms
+        marginBottom: Platform.OS === 'ios' ? 0 : 2,
     },
     sendButtonDisabled: {
-        backgroundColor: "#AAAAAA", // Lighter gray when disabled
+        backgroundColor: "#AAAAAA",
         shadowOpacity: 0.1,
         elevation: 1,
     },
     loadingOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255, 255, 255, 0.7)', // Light translucent overlay
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 1000, // Ensure it's on top
+        zIndex: 1000,
     },
     loadingText: {
         marginTop: 10,
         fontSize: 18,
-        color: '#000000', // Black text on light overlay
+        color: '#000000',
         fontWeight: '500',
     },
-    // Removed unused styles: header, title
 });
 
 export default ChatScreen;
